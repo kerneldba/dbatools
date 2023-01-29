@@ -81,7 +81,6 @@ function Get-DbaDbView {
         PS C:\> Get-DbaDbView -SqlInstance Server1 -Database db1 -View vw1
 
         Gets the view vw1 for the db1 database
-
     #>
     [CmdletBinding()]
     param (
@@ -96,37 +95,35 @@ function Get-DbaDbView {
         [Microsoft.SqlServer.Management.Smo.Database[]]$InputObject,
         [switch]$EnableException
     )
-
     begin {
         if ($View) {
-            $fqtns = @()
+            $fqTns = @()
             foreach ($v in $View) {
-                $fqtn = Get-ObjectNameParts -ObjectName $v
+                $fqTn = Get-ObjectNameParts -ObjectName $v
 
-                if (-not $fqtn.Parsed) {
+                if (-not $fqTn.Parsed) {
                     Write-Message -Level Warning -Message "Please check you are using proper three-part names. If your search value contains special characters you must use [ ] to wrap the name. The value $t could not be parsed as a valid name."
                     Continue
                 }
 
-                $fqtns += [PSCustomObject] @{
-                    Database   = $fqtn.Database
-                    Schema     = $fqtn.Schema
-                    View       = $fqtn.Name
-                    InputValue = $fqtn.InputValue
+                $fqTns += [PSCustomObject] @{
+                    Database   = $fqTn.Database
+                    Schema     = $fqTn.Schema
+                    View       = $fqTn.Name
+                    InputValue = $fqTn.InputValue
                 }
             }
-            if (-not $fqtns) {
+            if (-not $fqTns) {
                 Stop-Function -Message "No Valid View specified"
                 return
             }
         }
     }
-
     process {
         if (Test-FunctionInterrupt) { return }
 
         if (Test-Bound SqlInstance) {
-            $InputObject = Get-DbaDatabase -SqlInstance $SqlInstance -SqlCredential $SqlCredential -Database $Database -ExcludeDatabase $ExcludeDatabase
+            $InputObject = Get-DbaDatabase -SqlInstance $SqlInstance -SqlCredential $SqlCredential -Database $Database -ExcludeDatabase $ExcludeDatabase | Where-Object IsAccessible
         }
 
         foreach ($db in $InputObject) {
@@ -136,21 +133,21 @@ function Get-DbaDbView {
             # Downside: If some other properties were already read outside of this command in the used SMO, they are cleared.
             $db.Views.ClearAndInitialize('', [string[]]('Name', 'Schema', 'IsSystemObject', 'CreateDate', 'DateLastModified'))
 
-            if ($fqtns) {
+            if ($fqTns) {
                 $views = @()
-                foreach ($fqtn in $fqtns) {
+                foreach ($fqTn in $fqTns) {
                     # If the user specified a database in a three-part name, and it's not the
                     # database currently being processed, skip this view.
-                    if ($fqtn.Database) {
-                        if ($fqtn.Database -ne $db.Name) {
+                    if ($fqTn.Database) {
+                        if ($fqTn.Database -ne $db.Name) {
                             continue
                         }
                     }
 
-                    $vw = $db.Views | Where-Object { $_.Name -in $fqtn.View -and $fqtn.Schema -in ($_.Schema, $null) -and $fqtn.Database -in ($_.Parent.Name, $null) }
+                    $vw = $db.Views | Where-Object { $_.Name -in $fqTn.View -and $fqTn.Schema -in ($_.Schema, $null) -and $fqTn.Database -in ($_.Parent.Name, $null) }
 
                     if (-not $vw) {
-                        Write-Message -Level Verbose -Message "Could not find view $($fqtn.View) in $db on $($db.Parent.DomainInstanceName)"
+                        Write-Message -Level Verbose -Message "Could not find view $($fqTn.View) in $db on $($db.Parent.DomainInstanceName)"
                     }
                     $views += $vw
                 }

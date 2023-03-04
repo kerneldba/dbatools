@@ -269,7 +269,7 @@ exec sp_addrolemember 'userrole','bob';
     }
 
     It "can read a xel file" {
-        $results = Get-DbaXESession | Read-DbaXEFile -Raw -WarningAction SilentlyContinue
+        $results = Get-DbaXESession -SqlInstance localhost | Read-DbaXEFile -Raw -WarningAction SilentlyContinue
         [System.Linq.Enumerable]::Count($results) -gt 1 | Should Be $true
     }
 }

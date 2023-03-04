@@ -267,6 +267,11 @@ exec sp_addrolemember 'userrole','bob';
         $server = Connect-DbaInstance -SqlInstance dbatoolstest.database.windows.net -SqlCredential $azurecred -Tenant $env:TENANTID
         (Get-DbaDatabase -SqlInstance $server -Database test).Name | Should -Be "test"
     }
+
+    It "can read a xel file" {
+        $results = Get-DbaXESession -SqlInstance localhost | Read-DbaXEFile -Raw -WarningAction SilentlyContinue
+        [System.Linq.Enumerable]::Count($results) -gt 1 | Should Be $true
+    }
 }
 
 
